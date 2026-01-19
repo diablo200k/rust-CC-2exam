@@ -44,6 +44,7 @@ impl Slab {
         slab.init_free_list();
         Some(slab)
     }
+    
 
     fn align_size(size: usize) -> usize {
         let align = mem::align_of::<FreeNode>().max(8);
@@ -112,6 +113,14 @@ impl Slab {
         let base = self.memory.as_ptr() as usize;
         let end = base + SLAB_SIZE;
         addr >= base && addr < end
+    }
+}
+impl Drop for Slab {
+    fn drop(&mut self) {
+        let layout = Layout::from_size_align(SLAB_SIZE, mem::align_of::<usize>()).unwrap();
+        unsafe {
+            core::alloc::dealloc(self.memory.as_ptr(), layout);
+        }
     }
 }
 
