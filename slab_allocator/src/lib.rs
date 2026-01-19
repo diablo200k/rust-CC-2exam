@@ -1,9 +1,12 @@
-pub fn add(left: u64, right: u64) -> u64 {
+#![no_std]
+
+pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
     use super::*;
 
     #[test]
