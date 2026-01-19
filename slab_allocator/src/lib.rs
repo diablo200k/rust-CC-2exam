@@ -19,6 +19,65 @@ pub struct Slab {
     allocated: usize,
 }
 
+impl Slab {
+    pub fn new(object_size: usize) -> Option<Self> {
+        if object_size == 0 || object_size > MAX_OBJECT_SIZE {
+            return None;
+        }
+
+        let aligned_size = Self::align_size(object_size);
+        let capacity = SLAB_SIZE / aligned_size;
+        
+        if capacity == 0 {
+            return None;
+        }
+
+        let memory = Self::allocate_memory(SLAB_SIZE)?;
+        let mut slab = Slab {
+            memory,
+            free_list: None,
+            object_size: aligned_size,
+            capacity,
+            allocated: 0,
+        };
+
+        slab.init_free_list();
+        Some(slab)
+    }
+
+    fn align_size(size: usize) -> usize {
+        let align = mem::align_of::<FreeNode>().max(8);
+        let node_size = mem::size_of::<FreeNode>();
+        size.max(node_size).next_multiple_of(align)
+    }
+
+    fn allocate_memory(size: usize) -> Option<NonNull<u8>> {
+        let layout = Layout::from_size_align(size, mem::align_of::<usize>()).ok()?;
+        unsafe {
+            let ptr = core::alloc::alloc(layout);
+            NonNull::new(ptr)
+        }
+    }
+
+    fn init_free_list(&mut self) {
+        let base = self.memory.as_ptr() as usize;
+        let mut prev: Option<NonNull<FreeNode>> = None;
+
+        for i in (0..self.capacity).rev() {
+            let offset = i * self.object_size;
+            let node_ptr = (base + offset) as *mut FreeNode;
+            
+            unsafe {
+                let node = &mut *node_ptr;
+                node.next = prev;
+                prev = NonNull::new(node_ptr);
+            }
+        }
+
+        self.free_list = prev;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate std;
