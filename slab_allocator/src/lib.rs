@@ -98,6 +98,21 @@ impl Slab {
         self.free_list = Some(node_ptr);
         self.allocated = self.allocated.saturating_sub(1);
     }
+
+    pub fn is_full(&self) -> bool {
+        self.allocated == self.capacity
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.allocated == 0
+    }
+
+    pub fn contains(&self, ptr: NonNull<u8>) -> bool {
+        let addr = ptr.as_ptr() as usize;
+        let base = self.memory.as_ptr() as usize;
+        let end = base + SLAB_SIZE;
+        addr >= base && addr < end
+    }
 }
 
 #[cfg(test)]
