@@ -76,6 +76,28 @@ impl Slab {
 
         self.free_list = prev;
     }
+
+    pub fn allocate(&mut self) -> Option<NonNull<u8>> {
+        let node = self.free_list?;
+        
+        unsafe {
+            self.free_list = (*node.as_ptr()).next;
+        }
+        
+        self.allocated += 1;
+        Some(node.cast())
+    }
+
+    pub fn deallocate(&mut self, ptr: NonNull<u8>) {
+        let node_ptr = ptr.cast::<FreeNode>();
+        
+        unsafe {
+            (*node_ptr.as_ptr()).next = self.free_list;
+        }
+        
+        self.free_list = Some(node_ptr);
+        self.allocated = self.allocated.saturating_sub(1);
+    }
 }
 
 #[cfg(test)]
