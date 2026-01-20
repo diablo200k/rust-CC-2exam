@@ -275,4 +275,32 @@ mod tests {
         assert!(slab.is_empty());
     }
 
+    #[test]
+    fn test_slab_full() {
+        let mut slab = Slab::new(64).unwrap();
+        let capacity = slab.capacity;
+        let mut ptrs = Vec::new();
+
+        for _ in 0..capacity {
+            if let Some(ptr) = slab.allocate() {
+                ptrs.push(ptr);
+            }
+        }
+
+        assert!(slab.is_full());
+        assert!(slab.allocate().is_none());
+
+        slab.deallocate(ptrs[0]);
+        assert!(!slab.is_full());
+    }
+
+    #[test]
+    fn test_slab_contains() {
+        let mut slab = Slab::new(64).unwrap();
+        let ptr = slab.allocate().unwrap();
+        assert!(slab.contains(ptr));
+        
+        let external = NonNull::new(0x1000 as *mut u8).unwrap();
+        assert!(!slab.contains(external));
+    }
 }
