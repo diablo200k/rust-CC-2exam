@@ -137,6 +137,37 @@ impl SlabAllocator {
             object_size,
         }
     }
+
+
+pub fn allocate(&mut self) -> Option<NonNull<u8>> {
+        for slab in self.slabs.iter_mut().flatten() {
+            if !slab.is_full() {
+                if let Some(ptr) = slab.allocate() {
+                    return Some(ptr);
+                }
+            }
+        }
+
+        for slot in self.slabs.iter_mut() {
+            if slot.is_none() {
+                *slot = Slab::new(self.object_size);
+                if let Some(slab) = slot {
+                    return slab.allocate();
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn deallocate(&mut self, ptr: NonNull<u8>) {
+        for slab in self.slabs.iter_mut().flatten() {
+            if slab.contains(ptr) {
+                slab.deallocate(ptr);
+                return;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
