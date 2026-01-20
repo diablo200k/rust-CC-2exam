@@ -227,5 +227,52 @@ unsafe impl GlobalAlloc for GlobalSlabAllocator {
 
 #[cfg(test)]
 mod tests {
+   use super::*;
+
     extern crate std;
+    use std::vec::Vec;
+
+    #[test]
+    fn test_slab_creation() {
+        let slab = Slab::new(64);
+        assert!(slab.is_some());
+        let slab = slab.unwrap();
+        assert_eq!(slab.object_size, 64);
+        assert!(slab.capacity > 0);
+        assert!(slab.is_empty());
+    }
+
+    #[test]
+    fn test_slab_allocate_deallocate() {
+        let mut slab = Slab::new(64).unwrap();
+        let ptr = slab.allocate();
+        assert!(ptr.is_some());
+        assert!(!slab.is_empty());
+        
+        let ptr = ptr.unwrap();
+        slab.deallocate(ptr);
+        assert!(slab.is_empty());
+    }
+
+    #[test]
+    fn test_slab_multiple_allocations() {
+        let mut slab = Slab::new(64).unwrap();
+        let mut ptrs = Vec::new();
+
+        for _ in 0..10 {
+            if let Some(ptr) = slab.allocate() {
+                ptrs.push(ptr);
+            }
+        }
+
+        assert_eq!(ptrs.len(), 10);
+        assert_eq!(slab.allocated, 10);
+
+        for ptr in ptrs {
+            slab.deallocate(ptr);
+        }
+
+        assert!(slab.is_empty());
+    }
+
 }
