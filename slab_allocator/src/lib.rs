@@ -212,6 +212,19 @@ impl SlabCache {
     }
 }
 
+pub struct GlobalSlabAllocator;
+
+unsafe impl GlobalAlloc for GlobalSlabAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        core::alloc::alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        core::alloc::dealloc(ptr, layout);
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     extern crate std;
